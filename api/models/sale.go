@@ -13,14 +13,13 @@ type Sale struct {
 	ClientName      string    `json:"client_name"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
-	DeletedAt       string    `json:"-"`
 }
 
 type CreateSale struct {
 	BranchID        string  `json:"branch_id"`
 	ShopAssistantID string  `json:"shop_assistant_id"`
 	CashierID       string  `json:"cashier_id"`
-	PaymentType     string  `json:"-"`
+	PaymentType     string  `json:"payment_type"`
 	ClientName      string  `json:"client_name"`
 }
 
@@ -31,7 +30,6 @@ type UpdateSale struct {
 	PaymentType     string    `json:"payment_type"`
 	Price           float32   `json:"-"`
 	Status          string    `json:"status"`
-	UpdatedAt       time.Time `json:"-"`
 }
 
 type SaleResponse struct {

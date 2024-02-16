@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"market/api/models"
@@ -40,28 +41,51 @@ func (s *repositoryRepo) Create(ctx context.Context, repository models.CreateRep
 }
 
 func (s *repositoryRepo) GetByID(ctx context.Context, id models.PrimaryKey) (models.Repository, error) {
+	var updatedAt sql.NullTime
 	repository := models.Repository{}
-	query := `SELECT id, product_id, branch_id, count, created_at, updated_at, deleted_at FROM repositories WHERE id = $1`
+	query := `SELECT id, product_id, branch_id, count, created_at, updated_at FROM repositories WHERE id = $1`
 	err := s.DB.QueryRow(ctx, query, id.ID).Scan(
 		&repository.ID,
 		&repository.ProductID,
 		&repository.BranchID,
 		&repository.Count,
 		&repository.CreatedAt,
-		&repository.UpdatedAt,
-		&repository.DeletedAt,
+		&updatedAt,
 	)
 	if err != nil {
 		log.Println("Error while selecting repository by ID:", err)
 		return models.Repository{}, err
 	}
+
+	if updatedAt.Valid {
+		repository.UpdatedAt = updatedAt.Time
+	}
+
 	return repository, nil
+}
+
+func (s *repositoryRepo) ProductByID(ctx context.Context, id string) (int, error) {
+	var count int
+
+	query := `SELECT count FROM repositories WHERE product_id = $1`
+	err := s.DB.QueryRow(ctx, query, id).Scan(
+		&count,
+	)
+	if err != nil {
+		fmt.Println("Error while selecting product count: ", err)
+		return count, err
+	}
+
+	return count, nil
 }
 
 func (s *repositoryRepo) GetList(ctx context.Context, request models.GetListRequest) (models.RepositoriesResponse, error) {
 	var (
+		page              = request.Page
+		offset            = (page - 1) * request.Limit
 		repositories = []models.Repository{}
 		count        int
+		updatedAt  		  sql.NullTime
 	)
 
 	countQuery := `SELECT COUNT(*) FROM repositories WHERE deleted_at IS NULL`
@@ -75,14 +99,14 @@ func (s *repositoryRepo) GetList(ctx context.Context, request models.GetListRequ
 		return models.RepositoriesResponse{}, err
 	}
 
-	query := `SELECT id, product_id, branch_id, count, created_at, updated_at, deleted_at 
+	query := `SELECT id, product_id, branch_id, count, created_at, updated_at 
 			  FROM repositories WHERE deleted_at IS NULL`
 	if request.Search != "" {
 		query += fmt.Sprintf(` AND product_id = '%s'`, request.Search)
 	}
 	query += ` LIMIT $1 OFFSET $2`
 
-	rows, err := s.DB.Query(ctx, query, request.Limit, (request.Page-1)*request.Limit)
+	rows, err := s.DB.Query(ctx, query, request.Limit, offset)
 	if err != nil {
 		log.Println("Error while querying repositories:", err)
 		return models.RepositoriesResponse{}, err
@@ -97,13 +121,17 @@ func (s *repositoryRepo) GetList(ctx context.Context, request models.GetListRequ
 			&repository.BranchID,
 			&repository.Count,
 			&repository.CreatedAt,
-			&repository.UpdatedAt,
-			&repository.DeletedAt,
+			&updatedAt,
 		)
 		if err != nil {
 			log.Println("Error while scanning row of repositories:", err)
 			return models.RepositoriesResponse{}, err
 		}
+
+		if updatedAt.Valid {
+			repository.UpdatedAt = updatedAt.Time
+		}
+
 		repositories = append(repositories, repository)
 	}
 
@@ -131,7 +159,7 @@ func (s *repositoryRepo) Update(ctx context.Context, repository models.UpdateRep
 }
 
 func (s *repositoryRepo) Delete(ctx context.Context, id string) error {
-	query := `UPDATE repositories SET deleted_at = NOW() WHERE id = $1`
+	query := `UPDATE repositories SET deleted_at = extract(epoch from current_timestamp) WHERE id = $1`
 
 	_, err := s.DB.Exec(ctx, query, id)
 	if err != nil {

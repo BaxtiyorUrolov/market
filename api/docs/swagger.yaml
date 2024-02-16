@@ -3,8 +3,6 @@ definitions:
     properties:
       created_at:
         type: string
-      deleted_at:
-        type: string
       id:
         type: string
       price:
@@ -135,6 +133,8 @@ definitions:
         type: string
       client_name:
         type: string
+      payment_type:
+        type: string
       shop_assistant_id:
         type: string
     type: object
@@ -226,8 +226,6 @@ definitions:
         type: integer
       created_at:
         type: string
-      deleted_at:
-        type: string
       id:
         type: string
       product_id:
@@ -238,8 +236,6 @@ definitions:
   models.RepositoryTransaction:
     properties:
       created_at:
-        type: string
-      deleted_at:
         type: string
       id:
         type: string
@@ -308,8 +304,6 @@ definitions:
         type: string
       created_at:
         type: string
-      deleted_at:
-        type: string
       id:
         type: string
       login:
@@ -332,8 +326,6 @@ definitions:
       amount_for_cash:
         type: integer
       created_at:
-        type: string
-      deleted_at:
         type: string
       id:
         type: string
@@ -457,8 +449,6 @@ definitions:
   models.UpdateSale:
     properties:
       cashier_id:
-        type: string
-      id:
         type: string
       payment_type:
         type: string
@@ -1790,181 +1780,6 @@ paths:
       summary: Create a new staff
       tags:
       - staff
-  /staff-tariff:
-    post:
-      consumes:
-      - application/json
-      description: create a new staff tariff
-      parameters:
-      - description: staff-Tariff
-        in: body
-        name: staffTariff
-        schema:
-          $ref: '#/definitions/models.CreateStaffTarif'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.StaffTarif'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/models.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.Response'
-      summary: Create a new staff tariff
-      tags:
-      - staff-tariff
-  /staff-tariff/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: delete staff tariff
-      parameters:
-      - description: staff-tariff_id
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/models.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.Response'
-      summary: Delete staff tariff
-      tags:
-      - staff-tariff
-    get:
-      consumes:
-      - application/json
-      description: get staff tariff by id
-      parameters:
-      - description: staff-tariff_id
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.StaffTarif'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/models.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.Response'
-      summary: Get staff tariff by id
-      tags:
-      - staff-tariff
-    put:
-      consumes:
-      - application/json
-      description: get staff tariff
-      parameters:
-      - description: staff-tariff_id
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: staff-tariff
-        in: body
-        name: staff-tariff
-        schema:
-          $ref: '#/definitions/models.UpdateStaffTarif'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.StaffTarif'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/models.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.Response'
-      summary: Update staff tariff
-      tags:
-      - staff-tariff
-  /staff-tariffs:
-    get:
-      consumes:
-      - application/json
-      description: get staff tariff list
-      parameters:
-      - description: page
-        in: query
-        name: page
-        type: string
-      - description: limit
-        in: query
-        name: limit
-        type: string
-      - description: search
-        in: query
-        name: search
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.StaffTarifResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/models.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.Response'
-      summary: Get staff tariff list
-      tags:
-      - staff-tariff
   /staff/{id}:
     delete:
       consumes:
@@ -2145,6 +1960,181 @@ paths:
       summary: Get staff list
       tags:
       - staff
+  /stafftarif:
+    post:
+      consumes:
+      - application/json
+      description: create a new staff tariff
+      parameters:
+      - description: staff-Tariff
+        in: body
+        name: staffTariff
+        schema:
+          $ref: '#/definitions/models.CreateStaffTarif'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.StaffTarif'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Create a new staff tariff
+      tags:
+      - staff-tariff
+  /stafftarif/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: delete staff tariff
+      parameters:
+      - description: stafftarif_id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Delete staff tariff
+      tags:
+      - staff-tariff
+    get:
+      consumes:
+      - application/json
+      description: get staff tariff by id
+      parameters:
+      - description: stafftarif_id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.StaffTarif'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Get staff tariff by id
+      tags:
+      - staff-tariff
+    put:
+      consumes:
+      - application/json
+      description: get staff tariff
+      parameters:
+      - description: stafftarif_id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: staff-tariff
+        in: body
+        name: staff-tariff
+        schema:
+          $ref: '#/definitions/models.UpdateStaffTarif'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.StaffTarif'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Update staff tariff
+      tags:
+      - staff-tariff
+  /stafftarifs:
+    get:
+      consumes:
+      - application/json
+      description: get staff tariff list
+      parameters:
+      - description: page
+        in: query
+        name: page
+        type: string
+      - description: limit
+        in: query
+        name: limit
+        type: string
+      - description: search
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.StaffTarifResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Get staff tariff list
+      tags:
+      - staff-tariff
   /transaction:
     post:
       consumes:

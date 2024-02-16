@@ -2,11 +2,13 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"market/api/models"
 	"market/storage"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type categoryRepo struct {
@@ -28,17 +30,24 @@ func (c categoryRepo) Create(ctx context.Context, category models.CreateCategory
 }
 
 func (c categoryRepo) GetByID(ctx context.Context, id string) (models.Category, error) {
+	var updatedAt sql.NullTime
 	category := models.Category{}
-	query := `select id, name, parent_id, created_at, updated_at from categories where id = $1 and deleted_at is null`
+	query := `select id, name, parent_id, created_at, updated_at FROM categories WHERE id = $1 and deleted_at = 0`
 	if err := c.db.QueryRow(ctx, query, id).Scan(
 		&category.ID,
 		&category.Name,
 		&category.ParentID,
 		&category.CreatedAt,
-		&category.UpdatedAt); err != nil {
+		&updatedAt,
+		); err != nil {
 		fmt.Println("error is while selecting by id", err.Error())
 		return models.Category{}, err
 	}
+
+	if updatedAt.Valid {
+		category.UpdatedAt = updatedAt.Time
+	}
+
 	return category, nil
 }
 
@@ -50,8 +59,9 @@ func (c categoryRepo) GetList(ctx context.Context, request models.GetListRequest
 		count             = 0
 		categories        = []models.Category{}
 		search            = request.Search
+		updatedAt		  sql.NullTime
 	)
-	countQuery = `select count(1) from categories where deleted_at is null `
+	countQuery = `SELECT count(1) FROM categories WHERE deleted_at = 0 `
 	if search != "" {
 		countQuery += fmt.Sprintf(` and name ilike '%%%s%%'`, search)
 	}
@@ -60,7 +70,7 @@ func (c categoryRepo) GetList(ctx context.Context, request models.GetListRequest
 		return models.CategoryResponse{}, err
 	}
 
-	query = `select id, name, parent_id, created_at, updated_at from categories where deleted_at is null `
+	query = `SELECT id, name, parent_id, created_at, updated_at FROM categories WHERE deleted_at = 0 `
 	if search != "" {
 		query += fmt.Sprintf(` and name ilike '%%%s%%'`, search)
 	}
@@ -79,10 +89,16 @@ func (c categoryRepo) GetList(ctx context.Context, request models.GetListRequest
 			&category.Name,
 			&category.ParentID,
 			&category.CreatedAt,
-			&category.UpdatedAt); err != nil {
+			&updatedAt,
+			); err != nil {
 			fmt.Println("error is while scanning category", err.Error())
 			return models.CategoryResponse{}, err
 		}
+
+		if updatedAt.Valid {
+			category.UpdatedAt = updatedAt.Time
+		}
+
 		categories = append(categories, category)
 	}
 	return models.CategoryResponse{
@@ -92,7 +108,7 @@ func (c categoryRepo) GetList(ctx context.Context, request models.GetListRequest
 }
 
 func (c categoryRepo) Update(ctx context.Context, category models.UpdateCategory) (string, error) {
-	query := `update categories set name = $1, parent_id = $2, updated_at = now() where id = $3`
+	query := `UPDATE categories SET name = $1, parent_id = $2, updated_at = now() WHERE id = $3 AND deleted_at = 0`
 	if _, err := c.db.Exec(ctx, query, &category.Name, &category.ParentID, &category.ID); err != nil {
 		fmt.Println("error is while updating", err.Error())
 		return "", err
@@ -101,7 +117,7 @@ func (c categoryRepo) Update(ctx context.Context, category models.UpdateCategory
 }
 
 func (c categoryRepo) Delete(ctx context.Context, id string) error {
-	query := `update categories set deleted_at = now() where id = $1`
+	query := `update categories set deleted_at = extract(epoch FROM current_timestamp) WHERE id = $1`
 	if _, err := c.db.Exec(ctx, query, id); err != nil {
 		fmt.Println("error is while deleting", err.Error())
 		return err

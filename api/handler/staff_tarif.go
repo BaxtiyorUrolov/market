@@ -10,7 +10,7 @@ import (
 )
 
 // CreateStaffTariff godoc
-// @Router       /staff-tariff [POST]
+// @Router       /stafftarif [POST]
 // @Summary      Create a new staff tariff
 // @Description  create a new staff tariff
 // @Tags         staff-tariff
@@ -45,13 +45,13 @@ func (h Handler) CreateStaffTariff(c *gin.Context) {
 }
 
 // GetStaffTariff godoc
-// @Router       /staff-tariff/{id} [GET]
+// @Router       /stafftarif/{id} [GET]
 // @Summary      Get staff tariff by id
 // @Description  get staff tariff by id
 // @Tags         staff-tariff
 // @Accept       json
 // @Produce      json
-// @Param 		 id path string true "staff-tariff_id"
+// @Param 		 id path string true "stafftarif_id"
 // @Success      200  {object}  models.StaffTarif
 // @Failure      400  {object}  models.Response
 // @Failure      404  {object}  models.Response
@@ -69,7 +69,7 @@ func (h Handler) GetStaffTariff(c *gin.Context) {
 }
 
 // GetStaffTariffList godoc
-// @Router       /staff-tariffs [GET]
+// @Router       /stafftarifs [GET]
 // @Summary      Get staff tariff list
 // @Description  get staff tariff list
 // @Tags         staff-tariff
@@ -118,13 +118,13 @@ func (h Handler) GetStaffTariffList(c *gin.Context) {
 }
 
 // UpdateStaffTariff godoc
-// @Router       /staff-tariff/{id} [PUT]
+// @Router       /stafftarif/{id} [PUT]
 // @Summary      Update staff tariff
 // @Description  get staff tariff
 // @Tags         staff-tariff
 // @Accept       json
 // @Produce      json
-// @Param 		 id path string true "staff-tariff_id"
+// @Param 		 id path string true "stafftarif_id"
 // @Param 		 staff-tariff body models.UpdateStaffTarif false "staff-tariff"
 // @Success      200  {object}  models.StaffTarif
 // @Failure      400  {object}  models.Response
@@ -155,13 +155,13 @@ func (h Handler) UpdateStaffTariff(c *gin.Context) {
 }
 
 // DeleteStaffTariff godoc
-// @Router       /staff-tariff/{id} [DELETE]
+// @Router       /stafftarif/{id} [DELETE]
 // @Summary      Delete staff tariff
 // @Description  delete staff tariff
 // @Tags         staff-tariff
 // @Accept       json
 // @Produce      json
-// @Param 		 id path string true "staff-tariff_id"
+// @Param 		 id path string true "stafftarif_id"
 // @Success      200  {object}  models.Response
 // @Failure      400  {object}  models.Response
 // @Failure      404  {object}  models.Response

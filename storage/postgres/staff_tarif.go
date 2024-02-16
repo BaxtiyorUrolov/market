@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"market/api/models"
@@ -36,7 +37,7 @@ func (s *staffTarifRepo) Create(ctx context.Context, tarif models.CreateStaffTar
 			tarif.AmountForCard, 
 			createdAt,
 	); err != nil {
-		log.Println("Error while inserting data:", err)
+		log.Println("Error while inserting staff tarif data:", err)
 		return "", err
 	}
 
@@ -44,8 +45,9 @@ func (s *staffTarifRepo) Create(ctx context.Context, tarif models.CreateStaffTar
 }
 
 func (s *staffTarifRepo) GetStaffTariffByID(ctx context.Context, id models.PrimaryKey) (models.StaffTarif, error) {
+	var updatedAt sql.NullTime
 	staffTarif := models.StaffTarif{}
-	query := `SELECT id, name, tarif_type, amount_for_cash, amount_for_card, created_at, updated_at, deleted_at FROM staff_tarifs WHERE id = $1`
+	query := `SELECT id, name, tarif_type, amount_for_cash, amount_for_card, created_at, updated_at FROM staff_tarifs WHERE id = $1 AND deleted_at = 0 `
 	err := s.DB.QueryRow(ctx, query, id.ID).Scan(
 		&staffTarif.ID,
 		&staffTarif.Name,
@@ -53,13 +55,17 @@ func (s *staffTarifRepo) GetStaffTariffByID(ctx context.Context, id models.Prima
 		&staffTarif.AmountForCash,
 		&staffTarif.AmountForCard,
 		&staffTarif.CreatedAt,
-		&staffTarif.UpdatedAt,
-		&staffTarif.DeletedAt,
+		&updatedAt,
 	)
 	if err != nil {
 		log.Println("Error while selecting staff tariff by ID:", err)
 		return models.StaffTarif{}, err
 	}
+
+	if updatedAt.Valid {
+		staffTarif.UpdatedAt = updatedAt.Time
+	}
+
 	return staffTarif, nil
 }
 
@@ -68,6 +74,7 @@ func (s *staffTarifRepo) GetStaffTariffList(ctx context.Context, request models.
 	var (
 		staffTarifs = []models.StaffTarif{}
 		count       int
+		updatedAt   sql.NullTime
 	)
 
 	countQuery := `SELECT COUNT(*) FROM staff_tarifs`
@@ -81,7 +88,7 @@ func (s *staffTarifRepo) GetStaffTariffList(ctx context.Context, request models.
 		return models.StaffTarifResponse{}, err
 	}
 
-	query := `SELECT id, name, tarif_type, amount_for_cash, amount_for_card, created_at, updated_at, deleted_at FROM staff_tarifs where deleted_at is null`
+	query := ` SELECT id, name, tarif_type, amount_for_cash, amount_for_card, created_at, updated_at FROM staff_tarifs where deleted_at = 0 `
 	if request.Search != "" {
 		query += fmt.Sprintf(` WHERE name ILIKE '%%%s%%'`, request.Search)
 	}
@@ -104,12 +111,16 @@ func (s *staffTarifRepo) GetStaffTariffList(ctx context.Context, request models.
 			&staffTarif.AmountForCard,
 			&staffTarif.CreatedAt,
 			&staffTarif.UpdatedAt,
-			&staffTarif.DeletedAt,
 		)
 		if err != nil {
 			log.Println("Error while scanning row of staff tariffs:", err)
 			return models.StaffTarifResponse{}, err
 		}
+
+		if updatedAt.Valid {
+			staffTarif.UpdatedAt = updatedAt.Time
+		}
+
 		staffTarifs = append(staffTarifs, staffTarif)
 	}
 
@@ -138,7 +149,7 @@ func (s *staffTarifRepo) UpdateStaffTariff(ctx context.Context, starif models.Up
 }
 
 func (s *staffTarifRepo) DeleteStaffTariff(ctx context.Context, id string) error {
-	query := `UPDATE staff_tarifs SET deleted_at = NOW() WHERE id = $1`
+	query := `UPDATE staff_tarifs SET deleted_at = extract(epoch from current_timestamp) WHERE id = $1`
 
 	_, err := s.DB.Exec(ctx, query, id)
 	if err != nil {

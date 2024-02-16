@@ -1,6 +1,5 @@
 package models
 
-import "time"
 
 type Basket struct {
 	ID         string     `json:"id"`
@@ -8,9 +7,8 @@ type Basket struct {
 	ProductID  string     `json:"product_id"`
 	Quantity   int        `json:"quantity"`
 	Price      int        `json:"price"`
-	CreatedAt  time.Time  `json:"created_at"`
-	UpdatedAt  time.Time  `json:"updated_at"`
-	DeletedAt  *time.Time `json:"deleted_at"`
+	CreatedAt  string  	  `json:"created_at"`
+	UpdatedAt  string	  `json:"updated_at"`
 }
 
 type CreateBasket struct {

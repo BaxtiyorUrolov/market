@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"market/api/models"
@@ -53,6 +54,7 @@ func (s *staffRepo) Create(ctx context.Context, staff models.CreateStaff) (strin
 }
 
 func (s *staffRepo) StaffByID(ctx context.Context, id models.PrimaryKey) (models.Staff, error) {
+	var updatedAt sql.NullTime
 	staff := models.Staff{}
 	query := `SELECT id, branch_id, tariff_id, staff_type, name, balance, age, birth_date, login, created_at, updated_at FROM staffs WHERE id = $1`
 
@@ -67,11 +69,15 @@ func (s *staffRepo) StaffByID(ctx context.Context, id models.PrimaryKey) (models
 		&staff.BirthDate,
 		&staff.Login,
 		&staff.CreatedAt,
-		&staff.UpdatedAt,
+		&updatedAt,
 	)
 	if err != nil {
 		log.Println("Error while selecting staff by ID:", err)
 		return models.Staff{}, err
+	}
+
+	if updatedAt.Valid {
+		staff.UpdatedAt = updatedAt.Time
 	}
 
 	return staff, nil
@@ -80,10 +86,11 @@ func (s *staffRepo) StaffByID(ctx context.Context, id models.PrimaryKey) (models
 func (s *staffRepo) GetStaffTList(ctx context.Context, request models.GetListRequest) (models.StaffsResponse, error) {
 	var (
 		staffs = []models.Staff{}
-		count  int
+		count     int
+		updatedAt sql.NullTime
 	)
 
-	countQuery := `SELECT COUNT(*) FROM staffs where deleted_at is null`
+	countQuery := `SELECT COUNT(*) FROM staffs where deleted_at = 0`
 	if request.Search != "" {
 		countQuery += fmt.Sprintf(` AND name ILIKE '%%%s%%' or login ilike '%%%s%%'`, request.Search, request.Search)
 	}
@@ -94,7 +101,7 @@ func (s *staffRepo) GetStaffTList(ctx context.Context, request models.GetListReq
 		return models.StaffsResponse{}, err
 	}
 
-	query := `SELECT id, branch_id, tariff_id, staff_type, name, balance, age, birth_date, login, created_at, updated_at FROM staffs where deleted_at is null`
+	query := `SELECT id, branch_id, tariff_id, staff_type, name, balance, age, birth_date, login, created_at, updated_at FROM staffs where deleted_at = 0`
 	if request.Search != "" {
 		query += fmt.Sprintf(` AND name ILIKE '%%%s%%' or login ilike '%%%s%%'`, request.Search, request.Search)
 	}
@@ -120,12 +127,17 @@ func (s *staffRepo) GetStaffTList(ctx context.Context, request models.GetListReq
 			&staff.BirthDate,
 			&staff.Login,
 			&staff.CreatedAt,
-			&staff.UpdatedAt,
+			&updatedAt,
 		)
 		if err != nil {
 			log.Println("Error while scanning row of staffs:", err)
 			return models.StaffsResponse{}, err
 		}
+
+		if updatedAt.Valid {
+			staff.UpdatedAt = updatedAt.Time
+		}
+
 		staffs = append(staffs, staff)
 	}
 
@@ -156,7 +168,7 @@ func (s *staffRepo) UpdateStaff(ctx context.Context, staff models.UpdateStaff) (
 }
 
 func (s *staffRepo) DeleteStaff(ctx context.Context, id string) error {
-	query := `UPDATE staffs SET deleted_at = NOW() WHERE id = $1`
+	query := `UPDATE staffs SET deleted_at = extract(epoch from current_timestamp) WHERE id = $1`
 
 	_, err := s.DB.Exec(ctx, query, id)
 	if err != nil {

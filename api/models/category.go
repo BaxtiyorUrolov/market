@@ -8,7 +8,6 @@ type Category struct {
 	ParentID  string    `json:"parent_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	DeletedAt string    `json:"-"`
 }
 
 type CreateCategory struct {
@@ -20,7 +19,6 @@ type UpdateCategory struct {
 	ID        string    `json:"-"`
 	Name      string    `json:"name"`
 	ParentID  string    `json:"parent_id"`
-	UpdatedAt time.Time `json:"-"`
 }
 
 type CategoryResponse struct {

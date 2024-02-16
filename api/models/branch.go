@@ -10,7 +10,6 @@ type Branch struct {
 	Address   string    `json:"address"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	DeletedAt string    `json:"-"`
 }
 
 type CreateBranch struct {
@@ -22,7 +21,6 @@ type UpdateBranch struct {
 	ID        string    `json:"-"`
 	Name      string    `json:"name"`
 	Address   string    `json:"address"`
-	UpdatedAt time.Time `json:"-"`
 }
 
 type BranchResponse struct {

@@ -2,11 +2,13 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"market/api/models"
 	"market/storage"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type branchRepo struct {
@@ -19,8 +21,8 @@ func NewBranchRepo(db *pgxpool.Pool) storage.IBranchStorage {
 func (b branchRepo) Create(ctx context.Context, branch models.CreateBranch) (string, error) {
 	id := uuid.New()
 
-	query := `insert into branches (id, name, address) 
-									values($1, $2, $3)`
+	query := `INSERT INTO branches (id, name, address) 
+									VALUES($1, $2, $3)`
 
 	if _, err := b.db.Exec(ctx, query,
 		id,
@@ -34,17 +36,24 @@ func (b branchRepo) Create(ctx context.Context, branch models.CreateBranch) (str
 }
 
 func (b branchRepo) GetByID(ctx context.Context, id string) (models.Branch, error) {
+	var updatedAt sql.NullTime
 	branch := models.Branch{}
-	query := `select id, name, address, created_at, updated_at from branches where id = $1 and deleted_at is null`
+	query := `SELECT id, name, address, created_at, updated_at FROM branches WHERE id = $1 AND deleted_at = 0`
 	if err := b.db.QueryRow(ctx, query, id).Scan(
 		&branch.ID,
 		&branch.Name,
 		&branch.Address,
 		&branch.CreatedAt,
-		&branch.UpdatedAt); err != nil {
+		&updatedAt,
+		); err != nil {
 		fmt.Println("error is while selecting by id", err.Error())
 		return models.Branch{}, err
 	}
+
+	if updatedAt.Valid {
+		branch.UpdatedAt = updatedAt.Time
+	}
+
 	return branch, nil
 }
 
@@ -56,9 +65,10 @@ func (b branchRepo) GetList(ctx context.Context, request models.GetListRequest) 
 		page              = request.Page
 		offset            = (page - 1) * request.Limit
 		search            = request.Search
+		updatedAt         sql.NullTime
 	)
 
-	countQuery = `select count(1) from branches where deleted_at is NULL `
+	countQuery = `SELECT COUNT(1) FROM branches WHERE deleted_at = 0 `
 
 	if search != "" {
 		countQuery += fmt.Sprintf(` and name ilike '%%%s%%'`, search)
@@ -69,9 +79,9 @@ func (b branchRepo) GetList(ctx context.Context, request models.GetListRequest) 
 		return models.BranchResponse{}, err
 	}
 
-	query = `select id, name, address, created_at, updated_at from branches where deleted_at is NULL  `
+	query = `SELECT id, name, address, created_at, updated_at FROM branches WHERE deleted_at = 0 `
 	if search != "" {
-		query += fmt.Sprintf(` and name ilike '%%%s%%' `, search)
+		query += fmt.Sprintf(` AND name ILIKE '%%%s%%' `, search)
 	}
 
 	query += ` LIMIT $1 OFFSET $2`
@@ -88,10 +98,16 @@ func (b branchRepo) GetList(ctx context.Context, request models.GetListRequest) 
 			&branch.Name,
 			&branch.Address,
 			&branch.CreatedAt,
-			&branch.UpdatedAt); err != nil {
+			&updatedAt,
+			); err != nil {
 			fmt.Println("error is while scanning branch", err.Error())
 			return models.BranchResponse{}, err
 		}
+
+		if updatedAt.Valid {
+			branch.UpdatedAt = updatedAt.Time
+		}
+
 		branches = append(branches, branch)
 	}
 
@@ -101,7 +117,7 @@ func (b branchRepo) GetList(ctx context.Context, request models.GetListRequest) 
 	}, err
 }
 func (b branchRepo) Update(ctx context.Context, branch models.UpdateBranch) (string, error) {
-	query := `update branches set name = $1, address = $2, updated_at = Now() where id = $3`
+	query := `UPDATE branches SET name = $1, address = $2, updated_at = Now() WHERE id = $3 AND deleted_at = 0`
 
 	if _, err := b.db.Exec(ctx, query,
 		&branch.Name,
@@ -114,7 +130,7 @@ func (b branchRepo) Update(ctx context.Context, branch models.UpdateBranch) (str
 	return branch.ID, nil
 }
 func (b branchRepo) Delete(ctx context.Context, id string) error {
-	query := `update branches set deleted_at = now() where id = $1`
+	query := `UPDATE branches SET deleted_at = extract(epoch from current_timestamp) WHERE id = $1`
 
 	if _, err := b.db.Exec(ctx, query, id); err != nil {
 		fmt.Println("error is while deleting branches", err.Error())

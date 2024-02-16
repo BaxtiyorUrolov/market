@@ -9,7 +9,6 @@ type Repository struct {
 	Count      int       `json:"count"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
-	DeletedAt  *time.Time `json:"deleted_at"`
 }
 
 type CreateRepository struct {

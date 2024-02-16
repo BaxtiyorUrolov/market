@@ -6,6 +6,7 @@ import (
 	"log"
 	"market/api"
 	"market/config"
+	"market/service"
 	"market/storage/postgres"
 )
 
@@ -18,7 +19,9 @@ func main() {
 	}
 	defer store.Close()
 
-	server := api.New(store)
+	services := service.New(store)
+
+	server := api.New(services, store)
 
 	if err := server.Run("localhost:8080"); err != nil {
 		fmt.Printf("error while running server: %v\n", err)

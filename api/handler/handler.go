@@ -2,17 +2,23 @@ package handler
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"market/api/models"
+	"market/service"
 	"market/storage"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
 	storage storage.IStorage
+	services service.IServiceManager
 }
 
-func New(store storage.IStorage) Handler {
-	return Handler{storage: store}
+func New(services service.IServiceManager , store storage.IStorage) Handler {
+	return Handler{
+		storage: store,
+		services: services,
+	}
 }
 
 func handleResponse(c *gin.Context, msg string, statusCode int, data interface{}) {

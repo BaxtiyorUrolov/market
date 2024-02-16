@@ -2,12 +2,14 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"strconv"
 	"market/api/models"
 	"market/storage"
+	"strconv"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type transactionRepo struct {
@@ -20,16 +22,17 @@ func NewTransactionRepo(db *pgxpool.Pool) storage.ITransactionStorage {
 
 func (t transactionRepo) Create(ctx context.Context, trans models.CreateTransaction) (string, error) {
 	id := uuid.New()
-	query := `insert into transactions 
+	query := `INSERT INTO transactions 
     					(id, sale_id, staff_id, transaction_type, source_type, amount, description) 
-						values ($1, $2, $3, $4, $5, $6, $7)`
+						VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	if _, err := t.db.Exec(ctx, query, id,
 		trans.SaleID,
 		trans.StaffID,
 		trans.TransactionType,
 		trans.SourceType,
 		trans.Amount,
-		trans.Description); err != nil {
+		trans.Description,
+		); err != nil {
 		fmt.Println("error is while inserting data", err.Error())
 		return "", err
 	}
@@ -37,10 +40,11 @@ func (t transactionRepo) Create(ctx context.Context, trans models.CreateTransact
 }
 
 func (t transactionRepo) GetByID(ctx context.Context, id string) (models.Transaction, error) {
+	var updatedAt sql.NullTime
 	trans := models.Transaction{}
-	query := `select id, sale_id, staff_id, transaction_type, source_type, amount,
+	query := `SELECT id, sale_id, staff_id, transaction_type, source_type, amount,
        						description, created_at, updated_at
-							from transactions where deleted_at is null and id = $1`
+							FROM transactions where deleted_at = 0 AND id = $1`
 	if err := t.db.QueryRow(ctx, query, id).Scan(
 		&trans.ID,
 		&trans.SaleID,
@@ -50,7 +54,8 @@ func (t transactionRepo) GetByID(ctx context.Context, id string) (models.Transac
 		&trans.Amount,
 		&trans.Description,
 		&trans.CreatedAt,
-		&trans.UpdatedAt); err != nil {
+		&updatedAt,
+		); err != nil {
 		fmt.Println("error is while selecting by id", err.Error())
 		return models.Transaction{}, err
 	}
@@ -66,15 +71,16 @@ func (t transactionRepo) GetList(ctx context.Context, request models.Transaction
 		toAmount          = request.ToAmount
 		count             = 0
 		query, countQuery string
+		updatedAt         sql.NullTime
 	)
 
-	countQuery = `select count(1) from transactions where deleted_at is null `
+	countQuery = `SELECT COUNT(1) FROM transactions WHERE deleted_at = 0 `
 	if fromAmount != 0 && toAmount != 0 {
-		countQuery += fmt.Sprintf(` and amount between %f and %f`, fromAmount, toAmount)
+		countQuery += fmt.Sprintf(` AND amount between %f and %f`, fromAmount, toAmount)
 	} else if fromAmount != 0 {
-		countQuery += ` and amount <= ` + strconv.FormatFloat(fromAmount, 'f', 2, 64)
+		countQuery += ` AND amount <= ` + strconv.FormatFloat(fromAmount, 'f', 2, 64)
 	} else {
-		countQuery += ` and amount >= ` + strconv.FormatFloat(toAmount, 'f', 2, 64)
+		countQuery += ` AND amount >= ` + strconv.FormatFloat(toAmount, 'f', 2, 64)
 
 	}
 	if err := t.db.QueryRow(ctx, countQuery).Scan(&count); err != nil {
@@ -82,15 +88,15 @@ func (t transactionRepo) GetList(ctx context.Context, request models.Transaction
 		return models.TransactionResponse{}, err
 	}
 
-	query = `select id, sale_id, staff_id, transaction_type, source_type, amount,
-       						description, created_at, updated_at from transactions where deleted_at is null `
+	query = `SELECT id, sale_id, staff_id, transaction_type, source_type, amount,
+       						description, created_at, updated_at FROM transactions WHERE deleted_at = 0 `
 
 	if fromAmount != 0 && toAmount != 0 {
-		query += fmt.Sprintf(` and amount between %f and %f  order by amount asc, `, fromAmount, toAmount)
+		query += fmt.Sprintf(` AND amount between %f and %f  order by amount asc, `, fromAmount, toAmount)
 	} else if fromAmount != 0 {
-		query += ` and amount <= ` + strconv.FormatFloat(fromAmount, 'f', 2, 64) + `  order by amount asc, `
+		query += ` AND amount <= ` + strconv.FormatFloat(fromAmount, 'f', 2, 64) + `  order by amount asc, `
 	} else {
-		query += ` and amount >= ` + strconv.FormatFloat(toAmount, 'f', 2, 64) + ` order by amount asc, `
+		query += ` AND amount >= ` + strconv.FormatFloat(toAmount, 'f', 2, 64) + ` order by amount asc, `
 
 	}
 
@@ -113,10 +119,16 @@ func (t transactionRepo) GetList(ctx context.Context, request models.Transaction
 			&trans.Amount,
 			&trans.Description,
 			&trans.CreatedAt,
-			&trans.UpdatedAt); err != nil {
+			&updatedAt,
+			); err != nil {
 			fmt.Println("error is while scanning rows", err.Error())
 			return models.TransactionResponse{}, err
 		}
+
+		if updatedAt.Valid {
+			trans.UpdatedAt = updatedAt.Time
+		}
+
 		transactions = append(transactions, trans)
 	}
 	return models.TransactionResponse{
@@ -126,9 +138,9 @@ func (t transactionRepo) GetList(ctx context.Context, request models.Transaction
 }
 
 func (t transactionRepo) Update(ctx context.Context, transaction models.UpdateTransaction) (string, error) {
-	query := `update transactions set sale_id = $1, staff_id = $2, transaction_type = $3, source_type = $4, amount = $5,
-								description = $6, updated_at = now() 
-                    			where id = $7`
+	query := `UPDATE transactions SET sale_id = $1, staff_id = $2, transaction_type = $3, source_type = $4, amount = $5,
+								description = $6, updated_at = NOW() 
+                    			WHERE id = $7 AND deleted_at = 0`
 	if _, err := t.db.Exec(ctx, query,
 		&transaction.SaleID,
 		&transaction.StaffID,
@@ -136,17 +148,18 @@ func (t transactionRepo) Update(ctx context.Context, transaction models.UpdateTr
 		&transaction.SourceType,
 		&transaction.Amount,
 		&transaction.Description,
-		&transaction.ID); err != nil {
-		fmt.Println("error is while updating transaction", err.Error())
+		&transaction.ID,
+		); err != nil {
+		fmt.Println("error is while updating transaction: ", err.Error())
 		return "", err
 	}
 	return transaction.ID, nil
 }
 
 func (t transactionRepo) Delete(ctx context.Context, id string) error {
-	query := `update transactions set deleted_at = now() where id = $1`
+	query := `UPDATE transactions SET deleted_at = extract(epoch from current_timestamp) WHERE id = $1`
 	if _, err := t.db.Exec(ctx, query, id); err != nil {
-		fmt.Println("error is while deleting", err.Error())
+		fmt.Println("error is while deleting transaction: ", err.Error())
 		return err
 	}
 	return nil

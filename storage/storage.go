@@ -40,6 +40,7 @@ type IStaffRepo interface {
 type IRepositoryRepo interface {
 	Create(context.Context, models.CreateRepository) (string, error)
 	GetByID(context.Context, models.PrimaryKey) (models.Repository, error)
+	ProductByID(context.Context, string) (int, error)
 	GetList(context.Context, models.GetListRequest) (models.RepositoriesResponse, error)
 	Update(context.Context, models.UpdateRepository) (string, error)
 	Delete(context.Context, string) error

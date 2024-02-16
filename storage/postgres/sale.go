@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"market/api/models"
 	"market/storage"
@@ -20,39 +21,54 @@ func NewSaleRepo(db *pgxpool.Pool) storage.ISaleStorage {
 
 func (s saleRepo) Create(ctx context.Context, sale models.CreateSale) (string, error) {
 	id := uuid.New()
-	query := `insert into sales (id, branch_id, shop_assistant_id, cashier_id, client_name)
-								values($1, $2, $3, $4, $5)`
+	query := `INSERT INTO sales (id, branch_id, shop_assistant_id, cashier_id, client_name)
+								VALUES($1, $2, $3, $4, $5)`
 
 	if _, err := s.db.Exec(ctx, query, id,
 		sale.BranchID,
 		sale.ShopAssistantID,
 		sale.CashierID,
-		sale.ClientName); err != nil {
-		fmt.Println("error is while inserting data", err.Error())
+		sale.ClientName,
+		); err != nil {
+		fmt.Println("error is while inserting sale data", err.Error())
 		return "", err
 	}
 	return id.String(), nil
 }
 
 func (s saleRepo) GetByID(ctx context.Context, id string) (models.Sale, error) {
+	var (
+		updatedAt sql.NullTime
+		paymentType sql.NullString
+	)
 	sale := models.Sale{}
-	query := `select id, branch_id, shop_assistant_id, cashier_id, payment_type, price, status, client_name, 
-					created_at, updated_at from sales where id = $1 and deleted_at is null`
+	query := `SELECT id, branch_id, shop_assistant_id, cashier_id, payment_type, price, status, client_name, 
+					created_at, updated_at FROM sales WHERE id = $1 and deleted_at = 0`
 
 	if err := s.db.QueryRow(ctx, query, id).Scan(
 		&sale.ID,
 		&sale.BranchID,
 		&sale.ShopAssistantID,
 		&sale.CashierID,
-		&sale.PaymentType,
+		&paymentType,
 		&sale.Price,
 		&sale.Status,
 		&sale.ClientName,
 		&sale.CreatedAt,
-		&sale.UpdatedAt); err != nil {
+		&updatedAt,
+		); err != nil {
 		fmt.Println("error is while selecting by id", err.Error())
 		return models.Sale{}, err
 	}
+
+	if updatedAt.Valid {
+		sale.UpdatedAt = updatedAt.Time
+	}
+
+	if paymentType.Valid {
+		sale.PaymentType = paymentType.String
+	}
+
 	return sale, nil
 }
 
@@ -64,11 +80,12 @@ func (s saleRepo) GetList(ctx context.Context, request models.GetListRequest) (m
 		query, countQuery string
 		sales             = []models.Sale{}
 		search            = request.Search
+		updatedAt  		  sql.NullTime
 	)
 
-	countQuery = `select count(1) from sales where deleted_at is null `
+	countQuery = `SELECT COUNT(*) FROM sales WHERE deleted_at = 0 `
 	if search != "" {
-		countQuery += fmt.Sprintf(` AND client_name ilike '%%%s%%' `, search)
+		countQuery += fmt.Sprintf(` AND client_name ILIKE '%%%s%%' `, search)
 	}
 
 	if err := s.db.QueryRow(ctx, countQuery).Scan(&count); err != nil {
@@ -76,8 +93,8 @@ func (s saleRepo) GetList(ctx context.Context, request models.GetListRequest) (m
 		return models.SaleResponse{}, err
 	}
 
-	query = `select id, branch_id, shop_assistant_id, cashier_id, payment_type, price, status, client_name, 
-					created_at, updated_at from sales where deleted_at is null `
+	query = `SELECT id, branch_id, shop_assistant_id, cashier_id, payment_type, price, status, client_name, 
+					created_at, updated_at FROM sales WHERE deleted_at = 0 `
 
 	if search != "" {
 		query += fmt.Sprintf(` AND client_name ilike '%%%s%%' `, search)
@@ -86,6 +103,12 @@ func (s saleRepo) GetList(ctx context.Context, request models.GetListRequest) (m
 	query += ` LIMIT $1 OFFSET $2`
 
 	rows, err := s.db.Query(ctx, query, request.Limit, offset)
+	if err != nil {
+		fmt.Println("error is while selecting all sales", err.Error())
+		return models.SaleResponse{}, err
+	}
+
+
 	for rows.Next() {
 		sale := models.Sale{}
 		if err = rows.Scan(
@@ -98,10 +121,16 @@ func (s saleRepo) GetList(ctx context.Context, request models.GetListRequest) (m
 			&sale.Status,
 			&sale.ClientName,
 			&sale.CreatedAt,
-			&sale.UpdatedAt); err != nil {
+			&updatedAt,
+			); err != nil {
 			fmt.Println("error is while scanning sales", err.Error())
 			return models.SaleResponse{}, err
 		}
+
+		if updatedAt.Valid {
+			sale.UpdatedAt = updatedAt.Time
+		}
+
 		sales = append(sales, sale)
 	}
 	return models.SaleResponse{
@@ -130,7 +159,7 @@ func (s saleRepo) Update(ctx context.Context, sale models.UpdateSale) (string, e
 
 
 func (s saleRepo) Delete(ctx context.Context, id string) error {
-	query := `update sales set deleted_at = now() where id = $1`
+	query := `UPDATE sales SET deleted_at = extract(epoch from current_timestamp) WHERE id = $1`
 	if _, err := s.db.Exec(ctx, query, id); err != nil {
 		fmt.Println("error is while deleting sale", err.Error())
 		return err

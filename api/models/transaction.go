@@ -14,7 +14,6 @@ type Transaction struct {
 	Description     string    `json:"description"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
-	DeletedAt       string    `json:"-"`
 }
 
 type CreateTransaction struct {
@@ -34,7 +33,6 @@ type UpdateTransaction struct {
 	SourceType      string    `json:"source_type"`
 	Amount          float64   `json:"amount"`
 	Description     string    `json:"description"`
-	UpdatedAt       time.Time `json:"-"`
 }
 
 type TransactionResponse struct {
