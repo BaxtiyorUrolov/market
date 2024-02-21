@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"market/api/models"
+	"market/pkg/logger"
 	"market/storage"
 	"strconv"
 
@@ -14,22 +15,26 @@ import (
 
 type productRepo struct {
 	db *pgxpool.Pool
+	log logger.ILogger
 }
 
-func NewProductRepo(db *pgxpool.Pool) storage.IProducts {
-	return productRepo{db: db}
+func NewProductRepo(db *pgxpool.Pool, log logger.ILogger) storage.IProducts {
+	return productRepo{
+		db: db,
+		log: log,
+	}
 }
 
 func (p productRepo) Create(ctx context.Context, product models.CreateProduct) (string, error) {
 	id := uuid.New()
 	query := `INSERT INTO products (id, name, price, barcode, category_id) VALUES($1, $2, $3, $4, $5)`
 	if _, err := p.db.Exec(ctx, query,
-			id,
-			product.Name, 
-			product.Price, 
-			product.Barcode, 
-			product.CategoryID,
-		); err != nil {
+		id,
+		product.Name,
+		product.Price,
+		product.Barcode,
+		product.CategoryID,
+	); err != nil {
 		fmt.Println("error is while inserting data", err.Error())
 		return "", err
 	}
@@ -37,7 +42,7 @@ func (p productRepo) Create(ctx context.Context, product models.CreateProduct) (
 }
 
 func (p productRepo) GetByID(ctx context.Context, id string) (models.Product, error) {
-	var updatedAt, createdAt   sql.NullString
+	var updatedAt, createdAt sql.NullString
 	product := models.Product{}
 	query := `SELECT id, name, price, barcode, category_id, created_at, updated_at 
 	FROM products WHERE id = $1 AND deleted_at = 0`
@@ -65,7 +70,6 @@ func (p productRepo) GetByID(ctx context.Context, id string) (models.Product, er
 	return product, nil
 }
 
-
 func (p productRepo) GetList(ctx context.Context, request models.ProductGetListRequest) (models.ProductResponse, error) {
 	var (
 		page              = request.Page
@@ -75,8 +79,8 @@ func (p productRepo) GetList(ctx context.Context, request models.ProductGetListR
 		products          = []models.Product{}
 		name              = request.Name
 		barcode           = request.Barcode
-		createdAt		  sql.NullString
-		updatedAt  		  sql.NullString
+		createdAt         sql.NullString
+		updatedAt         sql.NullString
 	)
 	countQuery = `SELECT count(1) FROM products WHERE deleted_at = 0 `
 
@@ -120,7 +124,7 @@ func (p productRepo) GetList(ctx context.Context, request models.ProductGetListR
 			&product.CategoryID,
 			&createdAt,
 			&updatedAt,
-			); err != nil {
+		); err != nil {
 			fmt.Println("error is while scanning category", err.Error())
 			return models.ProductResponse{}, err
 		}

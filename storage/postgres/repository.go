@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"market/api/models"
+	"market/pkg/logger"
 	"market/storage"
 
 	"github.com/google/uuid"
@@ -14,11 +15,13 @@ import (
 
 type repositoryRepo struct {
 	DB *pgxpool.Pool
+	log logger.ILogger
 }
 
-func NewRepositoryRepo(DB *pgxpool.Pool) storage.IRepositoryRepo {
+func NewRepositoryRepo(DB *pgxpool.Pool, log logger.ILogger) storage.IRepositoryRepo {
 	return &repositoryRepo{
 		DB: DB,
+		log: log,
 	}
 }
 

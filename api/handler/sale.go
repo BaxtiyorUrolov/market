@@ -2,9 +2,10 @@ package handler
 
 import (
 	"context"
+	"fmt"
+	"market/api/models"
 	"net/http"
 	"strconv"
-	"market/api/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,23 +25,23 @@ import (
 func (h Handler) CreateSale(c *gin.Context) {
 	sale := models.CreateSale{}
 	if err := c.ShouldBindJSON(&sale); err != nil {
-		handleResponse(c, "error is while reading from body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while reading from body", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	id, err := h.storage.Sale().Create(context.Background(), sale)
 	if err != nil {
-		handleResponse(c, "error is while creating sale", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while creating sale", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	createdBranch, err := h.storage.Sale().GetByID(context.Background(), id)
 	if err != nil {
-		handleResponse(c, "error is while getting by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusCreated, createdBranch)
+	handleResponse(c, h.log, "", http.StatusCreated, createdBranch)
 }
 
 // GetSale godoc
@@ -60,11 +61,11 @@ func (h Handler) GetSale(c *gin.Context) {
 
 	sale, err := h.storage.Sale().GetByID(context.Background(), uid)
 	if err != nil {
-		handleResponse(c, "error is while getting by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, sale)
+	handleResponse(c, h.log, "", http.StatusOK, sale)
 }
 
 // GetSaleList godoc
@@ -91,14 +92,14 @@ func (h Handler) GetSaleList(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	page, err = strconv.Atoi(pageStr)
 	if err != nil {
-		handleResponse(c, "error is while converting page ", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while converting page ", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	limitStr := c.DefaultQuery("limit", "10")
 	limit, err = strconv.Atoi(limitStr)
 	if err != nil {
-		handleResponse(c, "error is while converting limit", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while converting limit", http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -109,8 +110,12 @@ func (h Handler) GetSaleList(c *gin.Context) {
 		Limit:  limit,
 		Search: search,
 	})
+	if err != nil {
+		handleResponse(c, h.log, "Error is while getting Sale list: ", http.StatusInternalServerError, err.Error())
+		return 
+	}
 
-	handleResponse(c, "", http.StatusOK, sales)
+	handleResponse(c, h.log, "", http.StatusOK, sales)
 }
 
 // UpdateSale godoc
@@ -131,23 +136,23 @@ func (h Handler) UpdateSale(c *gin.Context) {
     sale := models.UpdateSale{}
 
     if uid == "" {
-        handleResponse(c, "error is while reading body", http.StatusBadRequest, "sale ID is empty")
+        handleResponse(c, h.log, "error is while reading body", http.StatusBadRequest, "sale ID is empty")
         return
     }
 
     if err := c.ShouldBindJSON(&sale); err != nil {
-        handleResponse(c, "error is while reading body", http.StatusBadRequest, err.Error())
+        handleResponse(c, h.log, "error is while reading body", http.StatusBadRequest, err.Error())
         return
     }
 
 	status, err := h.storage.Sale().GetByID(context.Background(), uid)
 	if err != nil {
-		handleResponse(c, "error is while getting by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if status.Status != "in_process" {
-		handleResponse(c, "sale status is not 'in_process', cannot update", http.StatusBadRequest, "")
+		handleResponse(c, h.log, "sale status is not 'in_process', cannot update", http.StatusBadRequest, "")
 		return
 	}
 
@@ -159,7 +164,7 @@ func (h Handler) UpdateSale(c *gin.Context) {
 		Search: uid,
     })
     if err != nil {
-        handleResponse(c, "error is while getting baskets by sale ID", http.StatusInternalServerError, err.Error())
+        handleResponse(c, h.log, "error is while getting baskets by sale ID", http.StatusInternalServerError, err.Error())
         return
     }
 
@@ -168,21 +173,32 @@ func (h Handler) UpdateSale(c *gin.Context) {
         totalPrice += basket.Price
     }
 
+	fmt.Println(totalPrice)
+
+	count, err := h.storage.Repository().ProductByID(context.Background(), baskets.Baskets[0].ProductID)
+	if err != nil {
+		return 
+	}
+
+	if count - baskets.Baskets[0].Quantity < 0 {
+		return
+	}
+
     sale.Price = float32(totalPrice)
 
     id, err := h.storage.Sale().Update(context.Background(), sale)
     if err != nil {
-        handleResponse(c, "error is while updating sale", http.StatusInternalServerError, err.Error())
+        handleResponse(c, h.log, "error is while updating sale", http.StatusInternalServerError, err.Error())
         return
     }
 
     updatedSale, err := h.storage.Sale().GetByID(context.Background(), id)
     if err != nil {
-        handleResponse(c, "error is while getting by ID", http.StatusInternalServerError, err.Error())
+        handleResponse(c, h.log, "error is while getting by ID", http.StatusInternalServerError, err.Error())
         return
     }
 
-    handleResponse(c, "", http.StatusOK, updatedSale)
+    handleResponse(c, h.log, "", http.StatusOK, updatedSale)
 }
 
 // DeleteSale godoc
@@ -200,7 +216,7 @@ func (h Handler) UpdateSale(c *gin.Context) {
 func (h Handler) DeleteSale(c *gin.Context) {
 	uid := c.Param("id")
 	if err := h.storage.Sale().Delete(context.Background(), uid); err != nil {
-		handleResponse(c, "error is while deleting", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while deleting", http.StatusInternalServerError, err.Error())
 		return
 	}
 

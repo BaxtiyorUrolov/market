@@ -26,17 +26,17 @@ func (h *Handler) CreateBasket(c *gin.Context)  {
 	
 
 	if err :=  c.ShouldBindJSON(&basket); err != nil {
-		handleResponse(c, "error while reading body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while reading body", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	resp, err :=  h.services.Basket().Create(context.Background(), basket)
 	if err != nil {
-		handleResponse(c, "Error while creating basket", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while creating basket", http.StatusInternalServerError, err.Error())
 		return 
 	}
 
-	handleResponse(c, "", http.StatusCreated, resp)
+	handleResponse(c, h.log, "", http.StatusCreated, resp)
 }
 
 // GetBasket godoc
@@ -54,13 +54,13 @@ func (h *Handler) CreateBasket(c *gin.Context)  {
 func (h Handler) GetBasket(c *gin.Context) {
 	uid := c.Param("id")
 
-	basket, err := h.storage.Basket().GetByID(context.Background(), models.PrimaryKey{ID: uid})
+	basket, err := h.services.Basket().Get(context.Background(), uid)
 	if err != nil {
-		handleResponse(c, "error while getting basket by ID", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting by id", http.StatusInternalServerError, err)
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, basket)
+	handleResponse(c, h.log, "", http.StatusOK, basket)
 }
 
 // GetBasketList godoc
@@ -86,30 +86,30 @@ func (h Handler) GetBasketList(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	page, err = strconv.Atoi(pageStr)
 	if err != nil {
-		handleResponse(c, "error while converting page", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while converting page", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	limitStr := c.DefaultQuery("limit", "10")
 	limit, err = strconv.Atoi(limitStr)
 	if err != nil {
-		handleResponse(c, "error while converting limit", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while converting limit", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	search := c.Query("search")
 
-	response, err := h.storage.Basket().GetList(context.Background(), models.GetListRequest{
+	response, err := h.services.Basket().GetList(context.Background(), models.GetListRequest{
 		Page:   page,
 		Limit:  limit,
 		Search: search,
 	})
 	if err != nil {
-		handleResponse(c, "error while getting basket list", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting basket list", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, response)
+	handleResponse(c, h.log, "", http.StatusOK, response)
 }
 
 // UpdateBasket godoc
@@ -125,28 +125,24 @@ func (h Handler) GetBasketList(c *gin.Context) {
 // @Failure      400  {object}  models.Response
 // @Failure      404  {object}  models.Response
 // @Failure      500  {object}  models.Response
-func (h *Handler) UpdateBasket(c *gin.Context) {
+func (h Handler) UpdateBasket(c *gin.Context) {
+	updatedBasket := models.UpdateBasket{}
+
 	uid := c.Param("id")
-
-	basket := models.UpdateBasket{}
-	if err := c.ShouldBindJSON(&basket); err != nil {
-		handleResponse(c, "error while reading from body", http.StatusBadRequest, err.Error())
+	if err := c.ShouldBindJSON(&updatedBasket); err != nil {
+		handleResponse(c, h.log, "error is while decoding ", http.StatusBadRequest, err)
 		return
 	}
 
-	basket.ID = uid
-	if _, err := h.storage.Basket().Update(context.Background(), basket); err != nil {
-		handleResponse(c, "error while updating basket ", http.StatusInternalServerError, err.Error())
-		return
-	}
+	updatedBasket.ID = uid
 
-	updatedBasket, err := h.storage.Basket().GetByID(context.Background(), models.PrimaryKey{ID: uid})
+	basket, err := h.services.Basket().Update(context.Background(), updatedBasket)
 	if err != nil {
-		handleResponse(c, "error while getting by ID", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while updating basket", http.StatusInternalServerError, err)
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, updatedBasket)
+	handleResponse(c, h.log, "", http.StatusOK, basket)
 }
 
 // DeleteBasket godoc
@@ -161,13 +157,13 @@ func (h *Handler) UpdateBasket(c *gin.Context) {
 // @Failure      400  {object}  models.Response
 // @Failure      404  {object}  models.Response
 // @Failure      500  {object}  models.Response
-func (h *Handler) DeleteBasket(c *gin.Context) {
+func (h Handler) DeleteBasket(c *gin.Context) {
 	uid := c.Param("id")
 
-	if err := h.storage.Basket().Delete(context.Background(), uid); err != nil {
-		handleResponse(c, "error while deleting basket ", http.StatusInternalServerError, err.Error())
+	if err := h.services.Basket().Delete(context.Background(), models.PrimaryKey{ID: uid}); err != nil {
+		handleResponse(c, h.log, "error is while deleting basket", http.StatusInternalServerError, err)
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, "basket tariff deleted")
+	handleResponse(c, h.log, "", http.StatusOK, nil)
 }

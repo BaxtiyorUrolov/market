@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"market/api/models"
+	"market/pkg/logger"
 	"market/storage"
 	"time"
 
@@ -15,11 +16,13 @@ import (
 
 type staffRepo struct {
 	DB *pgxpool.Pool
+	log logger.ILogger
 }
 
-func NewStaffRepo(DB *pgxpool.Pool) storage.IStaffRepo {
+func NewStaffRepo(DB *pgxpool.Pool, log logger.ILogger) storage.IStaffRepo {
 	return &staffRepo{
 		DB: DB,
+		log: log,
 	}
 }
 

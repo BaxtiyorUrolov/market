@@ -30,17 +30,17 @@ func (h Handler) CreateBranch(c *gin.Context) {
 
 	id, err := h.storage.Branch().Create(context.Background(), branch)
 	if err != nil {
-		handleResponse(c, "error is while creating branch", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while creating branch", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	createdBranch, err := h.storage.Branch().GetByID(context.Background(), id)
 	if err != nil {
-		handleResponse(c, "error is while getting by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusCreated, createdBranch)
+	handleResponse(c, h.log, "", http.StatusCreated, createdBranch)
 }
 
 // GetBranch godoc
@@ -60,11 +60,11 @@ func (h Handler) GetBranch(c *gin.Context) {
 
 	branch, err := h.storage.Branch().GetByID(context.Background(), uid)
 	if err != nil {
-		handleResponse(c, "error is while getting by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, branch)
+	handleResponse(c, h.log, "", http.StatusOK, branch)
 }
 
 // GetBranchList godoc
@@ -91,14 +91,14 @@ func (h Handler) GetBranchList(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	page, err = strconv.Atoi(pageStr)
 	if err != nil {
-		handleResponse(c, "error is while converting page", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while converting page", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	limitStr := c.DefaultQuery("limit", "10")
 	limit, err = strconv.Atoi(limitStr)
 	if err != nil {
-		handleResponse(c, "error is while converting limit", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while converting limit", http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -109,8 +109,11 @@ func (h Handler) GetBranchList(c *gin.Context) {
 		Limit:  limit,
 		Search: search,
 	})
+	if err != nil {
+		return
+	}
 
-	handleResponse(c, "", http.StatusOK, branches)
+	handleResponse(c, h.log, "", http.StatusOK, branches)
 }
 
 // UpdateBranch godoc
@@ -131,24 +134,24 @@ func (h Handler) UpdateBranch(c *gin.Context) {
 
 	branch := models.UpdateBranch{}
 	if err := c.ShouldBindJSON(&branch); err != nil {
-		handleResponse(c, "error is wile reading from body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is wile reading from body", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	branch.ID = uid
 	id, err := h.storage.Branch().Update(context.Background(), branch)
 	if err != nil {
-		handleResponse(c, "error is while updating branch", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while updating branch", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	updatedBranch, err := h.storage.Branch().GetByID(context.Background(), id)
 	if err != nil {
-		handleResponse(c, "error is while getting by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, updatedBranch)
+	handleResponse(c, h.log, "", http.StatusOK, updatedBranch)
 }
 
 // DeleteBranch godoc
@@ -170,5 +173,5 @@ func (h Handler) DeleteBranch(c *gin.Context) {
 		handleResponse(c, "error is while delteing branch", http.StatusInternalServerError, err.Error())
 		return
 	}
-	handleResponse(c, "", http.StatusOK, "branch deleted!")
+	handleResponse(c, h.log, "", http.StatusOK, "branch deleted!")
 }

@@ -22,24 +22,19 @@ import (
 // @Failure      500  {object}  models.Response
 func (h Handler) CreateCategory(c *gin.Context) {
 	category := models.CreateCategory{}
+
 	if err := c.ShouldBindJSON(&category); err != nil {
-		handleResponse(c, "error is while reading from body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while reading body from client", http.StatusBadRequest, err.Error())
 		return
 	}
 
-	id, err := h.storage.Category().Create(c.Request.Context(), category)
+	resp, err := h.services.Category().Create(context.Background(), category)
 	if err != nil {
-		handleResponse(c, "error is while creating category", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while creating category", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	createdCategory, err := h.storage.Category().GetByID(context.Background(), id)
-	if err != nil {
-		handleResponse(c, "error is while getting by id", http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	handleResponse(c, "", http.StatusCreated, createdCategory)
+	handleResponse(c, h.log, "", http.StatusCreated, resp)
 }
 
 // GetCategory godoc
@@ -62,7 +57,7 @@ func (h Handler) GetCategory(c *gin.Context) {
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, category)
+	handleResponse(c, h.log, "", http.StatusOK, category)
 }
 
 // GetCategoryList godoc
@@ -88,14 +83,14 @@ func (h Handler) GetCategoryList(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	page, err = strconv.Atoi(pageStr)
 	if err != nil {
-		handleResponse(c, "error is while converting page", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while converting page", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	limitStr := c.DefaultQuery("limit", "10")
 	limit, err = strconv.Atoi(limitStr)
 	if err != nil {
-		handleResponse(c, "error is while converting limit", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while converting limit", http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -107,11 +102,11 @@ func (h Handler) GetCategoryList(c *gin.Context) {
 		Search: search,
 	})
 	if err != nil {
-		handleResponse(c, "error is while getting list", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting list", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, categories)
+	handleResponse(c, h.log, "", http.StatusOK, categories)
 }
 
 // UpdateCategory godoc
@@ -132,7 +127,7 @@ func (h Handler) UpdateCategory(c *gin.Context) {
 	category := models.UpdateCategory{}
 
 	if err := c.ShouldBindJSON(&category); err != nil {
-		handleResponse(c, "error is while reading body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while reading body", http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -140,17 +135,17 @@ func (h Handler) UpdateCategory(c *gin.Context) {
 
 	id, err := h.storage.Category().Update(context.Background(), category)
 	if err != nil {
-		handleResponse(c, "error is while updating category", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while updating category", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	updatedCategory, err := h.storage.Category().GetByID(context.Background(), id)
 	if err != nil {
-		handleResponse(c, "error is while getting by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, updatedCategory)
+	handleResponse(c, h.log, "", http.StatusOK, updatedCategory)
 }
 
 // DeleteCategory godoc
@@ -168,9 +163,9 @@ func (h Handler) UpdateCategory(c *gin.Context) {
 func (h Handler) DeleteCategory(c *gin.Context) {
 	uid := c.Param("id")
 	if err := h.storage.Category().Delete(context.Background(), uid); err != nil {
-		handleResponse(c, "error is while deleting", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while deleting", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, "category deleted!")
+	handleResponse(c, h.log, "", http.StatusOK, "category deleted!")
 }

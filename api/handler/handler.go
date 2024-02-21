@@ -1,38 +1,39 @@
 package handler
 
 import (
-	"fmt"
-	"market/api/models"
-	"market/service"
-	"market/storage"
-
 	"github.com/gin-gonic/gin"
+	"market/api/models"
+	"market/pkg/logger"
+	"market/service"
 )
 
 type Handler struct {
-	storage storage.IStorage
 	services service.IServiceManager
+	log      logger.ILogger
 }
 
-func New(services service.IServiceManager , store storage.IStorage) Handler {
+func New(services service.IServiceManager, log logger.ILogger) Handler {
 	return Handler{
-		storage: store,
 		services: services,
+		log:      log,
 	}
 }
 
-func handleResponse(c *gin.Context, msg string, statusCode int, data interface{}) {
+func handleResponse(c *gin.Context, log logger.ILogger, msg string, statusCode int, data interface{}) {
 	resp := models.Response{}
 
 	switch code := statusCode; {
 	case code < 400:
-		resp.Description = "success"
+		resp.Description = "OK"
+		log.Info("~~~~> OK", logger.String("msg", msg), logger.Any("status", code))
+	case code == 401:
+		resp.Description = "Unauthorized"
 	case code < 500:
-		resp.Description = "BAD REQUEST"
-		fmt.Println("BAD REQUEST:"+msg, " reason: ", data)
+		resp.Description = "Bad Request"
+		log.Error("!!!!! BAD REQUEST", logger.String("msg", msg), logger.Any("status", code))
 	default:
-		resp.Description = "INTERNAL SERVER ERROR"
-		fmt.Println("INTERVAL SERVER ERROR:"+msg, " reason: ", data)
+		resp.Description = "Internal Server Error"
+		log.Error("!!!!! INTERNAL SERVER ERROR", logger.String("msg", msg), logger.Any("status", code))
 	}
 
 	resp.StatusCode = statusCode

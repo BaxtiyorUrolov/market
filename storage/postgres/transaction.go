@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"market/api/models"
+	"market/pkg/logger"
 	"market/storage"
 	"strconv"
 
@@ -14,10 +15,14 @@ import (
 
 type transactionRepo struct {
 	db *pgxpool.Pool
+	log logger.ILogger
 }
 
-func NewTransactionRepo(db *pgxpool.Pool) storage.ITransactionStorage {
-	return transactionRepo{db: db}
+func NewTransactionRepo(db *pgxpool.Pool, log logger.ILogger) storage.ITransactionStorage {
+	return transactionRepo{
+		db: db,
+		log: log,
+	}
 }
 
 func (t transactionRepo) Create(ctx context.Context, trans models.CreateTransaction) (string, error) {

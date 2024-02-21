@@ -25,13 +25,13 @@ func (h Handler) CreateRepositoryTransaction(c *gin.Context) {
 	rtransaction := models.CreateRepositoryTransaction{}
 
 	if err := c.ShouldBindJSON(&rtransaction); err != nil {
-		handleResponse(c, "error while reading body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while reading body", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	id, err := h.storage.RTransaction().Create(context.Background(), rtransaction)
 	if err != nil {
-		handleResponse(c, "error while creating repository transaction", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while creating repository transaction", http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -39,11 +39,11 @@ func (h Handler) CreateRepositoryTransaction(c *gin.Context) {
 		ID: id,
 	})
 	if err != nil {
-		handleResponse(c, "error while getting by ID", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting by ID", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusCreated, createdRTransaction)
+	handleResponse(c, h.log, "", http.StatusCreated, createdRTransaction)
 }
 
 // GetRepositoryTransaction godoc
@@ -63,11 +63,11 @@ func (h Handler) GetRepositoryTransaction(c *gin.Context) {
 
 	repository, err := h.storage.RTransaction().GetByID(context.Background(), models.PrimaryKey{ID: uid})
 	if err != nil {
-		handleResponse(c, "error while getting repository transaction by ID", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting repository transaction by ID", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, repository)
+	handleResponse(c, h.log, "", http.StatusOK, repository)
 }
 
 // GetRepositoryTransactionList godoc
@@ -93,14 +93,14 @@ func (h Handler) GetRepositoryTransactionList(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	page, err = strconv.Atoi(pageStr)
 	if err != nil {
-		handleResponse(c, "error while converting page", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while converting page", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	limitStr := c.DefaultQuery("limit", "10")
 	limit, err = strconv.Atoi(limitStr)
 	if err != nil {
-		handleResponse(c, "error while converting limit", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while converting limit", http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -112,11 +112,11 @@ func (h Handler) GetRepositoryTransactionList(c *gin.Context) {
 		Search: search,
 	})
 	if err != nil {
-		handleResponse(c, "error while getting repository list", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting repository list", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, response)
+	handleResponse(c, h.log, "", http.StatusOK, response)
 }
 
 // UpdateRepositoryTransaction godoc
@@ -137,23 +137,23 @@ func (h Handler) UpdateRepositoryTransaction(c *gin.Context) {
 
 	rTransaction := models.UpdateRepositoryTransaction{}
 	if err := c.ShouldBindJSON(&rTransaction); err != nil {
-		handleResponse(c, "error while reading from body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while reading from body", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	rTransaction.ID = uid
 	if _, err := h.storage.RTransaction().Update(context.Background(), rTransaction); err != nil {
-		handleResponse(c, "error while updating repository transaction ", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while updating repository transaction ", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	updatedRTransaction, err := h.storage.RTransaction().GetByID(context.Background(), models.PrimaryKey{ID: uid})
 	if err != nil {
-		handleResponse(c, "error while getting by ID", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting by ID", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, updatedRTransaction)
+	handleResponse(c, h.log, "", http.StatusOK, updatedRTransaction)
 }
 
 // DeleteRepositoryTransaction godoc
@@ -172,9 +172,9 @@ func (h Handler) DeleteRepositoryTransaction(c *gin.Context) {
 	uid := c.Param("id")
 
 	if err := h.storage.RTransaction().Delete(context.Background(), uid); err != nil {
-		handleResponse(c, "error while deleting repository transaction ", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while deleting repository transaction ", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, "repository transaction deleted")
+	handleResponse(c, h.log, "", http.StatusOK, "repository transaction deleted")
 }

@@ -25,23 +25,23 @@ func (h Handler) CreateStaffTariff(c *gin.Context) {
 	staffTariff := models.CreateStaffTarif{}
 
 	if err := c.ShouldBindJSON(&staffTariff); err != nil {
-		handleResponse(c, "error while reading body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while reading body", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	id, err := h.storage.StaffTariff().Create(context.Background(), staffTariff)
 	if err != nil {
-		handleResponse(c, "error while creating staff tariff", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while creating staff tariff", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	createdStaffTariff, err := h.storage.StaffTariff().GetStaffTariffByID(context.Background(), models.PrimaryKey{ID: id})
 	if err != nil {
-		handleResponse(c, "error while getting by ID", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting by ID", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusCreated, createdStaffTariff)
+	handleResponse(c, h.log, "", http.StatusCreated, createdStaffTariff)
 }
 
 // GetStaffTariff godoc
@@ -61,11 +61,11 @@ func (h Handler) GetStaffTariff(c *gin.Context) {
 
 	staffTariff, err := h.storage.StaffTariff().GetStaffTariffByID(context.Background(), models.PrimaryKey{ID: uid})
 	if err != nil {
-		handleResponse(c, "error while getting staff tariff by ID", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting staff tariff by ID", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, staffTariff)
+	handleResponse(c, h.log, "", http.StatusOK, staffTariff)
 }
 
 // GetStaffTariffList godoc
@@ -91,14 +91,14 @@ func (h Handler) GetStaffTariffList(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	page, err = strconv.Atoi(pageStr)
 	if err != nil {
-		handleResponse(c, "error while converting page", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while converting page", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	limitStr := c.DefaultQuery("limit", "10")
 	limit, err = strconv.Atoi(limitStr)
 	if err != nil {
-		handleResponse(c, "error while converting limit", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while converting limit", http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -110,11 +110,11 @@ func (h Handler) GetStaffTariffList(c *gin.Context) {
 		Search: search,
 	})
 	if err != nil {
-		handleResponse(c, "error while getting staff tariff list", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting staff tariff list", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, response)
+	handleResponse(c, h.log, "", http.StatusOK, response)
 }
 
 // UpdateStaffTariff godoc
@@ -135,23 +135,23 @@ func (h Handler) UpdateStaffTariff(c *gin.Context) {
 
 	sTariff := models.UpdateStaffTarif{}
 	if err := c.ShouldBindJSON(&sTariff); err != nil {
-		handleResponse(c, "error while reading from body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while reading from body", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	sTariff.ID = uid
 	if _, err := h.storage.StaffTariff().UpdateStaffTariff(context.Background(), sTariff); err != nil {
-		handleResponse(c, "error while updating staff tariff", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while updating staff tariff", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	updatedStaffTariff, err := h.storage.StaffTariff().GetStaffTariffByID(context.Background(), models.PrimaryKey{ID: uid})
 	if err != nil {
-		handleResponse(c, "error while getting by ID", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting by ID", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, updatedStaffTariff)
+	handleResponse(c, h.log, "", http.StatusOK, updatedStaffTariff)
 }
 
 // DeleteStaffTariff godoc
@@ -170,9 +170,9 @@ func (h Handler) DeleteStaffTariff(c *gin.Context) {
 	uid := c.Param("id")
 
 	if err := h.storage.StaffTariff().DeleteStaffTariff(context.Background(), uid); err != nil {
-		handleResponse(c, "error while deleting staff tariff", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while deleting staff tariff", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, "staff tariff deleted")
+	handleResponse(c, h.log, "", http.StatusOK, "staff tariff deleted")
 }

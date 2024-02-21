@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"market/api/models"
+	"market/pkg/logger"
 	"market/storage"
 
 	"github.com/google/uuid"
@@ -13,23 +14,27 @@ import (
 
 type categoryRepo struct {
 	db *pgxpool.Pool
+	log logger.ILogger
 }
 
-func NewCategoryRepo(db *pgxpool.Pool) storage.ICategory {
-	return categoryRepo{db: db}
+func NewCategoryRepo(db *pgxpool.Pool, log logger.ILogger) storage.ICategory {
+	return categoryRepo{
+		db: db,
+		log: log,
+	}
 }
 
 func (c categoryRepo) Create(ctx context.Context, category models.CreateCategory) (string, error) {
 	id := uuid.New()
 	query := `insert into categories (id, name, parent_id) values($1, $2, $3)`
 	if _, err := c.db.Exec(ctx, query, id, category.Name, category.ParentID); err != nil {
-		fmt.Println("error is while inserting data", err.Error())
+		c.log.Error("error is while inserting data", logger.Error(err))
 		return "", err
 	}
 	return id.String(), nil
 }
 
-func (c categoryRepo) GetByID(ctx context.Context, id string) (models.Category, error) {
+func (c categoryRepo) GetByID(ctx context.Context, id models.PrimaryKey) (models.Category, error) {
 	var updatedAt sql.NullTime
 	category := models.Category{}
 	query := `select id, name, parent_id, created_at, updated_at FROM categories WHERE id = $1 and deleted_at = 0`
@@ -40,7 +45,7 @@ func (c categoryRepo) GetByID(ctx context.Context, id string) (models.Category, 
 		&category.CreatedAt,
 		&updatedAt,
 		); err != nil {
-		fmt.Println("error is while selecting by id", err.Error())
+		c.log.Error("error is while selecting by id", logger.Error(err))
 		return models.Category{}, err
 	}
 
@@ -66,7 +71,7 @@ func (c categoryRepo) GetList(ctx context.Context, request models.GetListRequest
 		countQuery += fmt.Sprintf(` and name ilike '%%%s%%'`, search)
 	}
 	if err := c.db.QueryRow(ctx, countQuery).Scan(&count); err != nil {
-		fmt.Println("error is while scanning count", err.Error())
+		c.log.Error("error is while scanning count", logger.Error(err))
 		return models.CategoryResponse{}, err
 	}
 
@@ -78,7 +83,7 @@ func (c categoryRepo) GetList(ctx context.Context, request models.GetListRequest
 	query += ` LIMIT $1 OFFSET $2`
 	rows, err := c.db.Query(ctx, query, request.Limit, offset)
 	if err != nil {
-		fmt.Println("error is while selecting all", err.Error())
+		c.log.Error("error is while selecting all", logger.Error(err))
 		return models.CategoryResponse{}, err
 	}
 
@@ -91,7 +96,7 @@ func (c categoryRepo) GetList(ctx context.Context, request models.GetListRequest
 			&category.CreatedAt,
 			&updatedAt,
 			); err != nil {
-			fmt.Println("error is while scanning category", err.Error())
+			c.log.Error("error is while scanning category", logger.Error(err))
 			return models.CategoryResponse{}, err
 		}
 
@@ -110,7 +115,7 @@ func (c categoryRepo) GetList(ctx context.Context, request models.GetListRequest
 func (c categoryRepo) Update(ctx context.Context, category models.UpdateCategory) (string, error) {
 	query := `UPDATE categories SET name = $1, parent_id = $2, updated_at = now() WHERE id = $3 AND deleted_at = 0`
 	if _, err := c.db.Exec(ctx, query, &category.Name, &category.ParentID, &category.ID); err != nil {
-		fmt.Println("error is while updating", err.Error())
+		c.log.Error("error is while updating", logger.Error(err))
 		return "", err
 	}
 	return category.ID, nil
@@ -119,7 +124,7 @@ func (c categoryRepo) Update(ctx context.Context, category models.UpdateCategory
 func (c categoryRepo) Delete(ctx context.Context, id string) error {
 	query := `update categories set deleted_at = extract(epoch FROM current_timestamp) WHERE id = $1`
 	if _, err := c.db.Exec(ctx, query, id); err != nil {
-		fmt.Println("error is while deleting", err.Error())
+		c.log.Error("error is while deleting", logger.Error(err))
 		return err
 	}
 	return nil

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"market/api/models"
+	"market/pkg/logger"
 	"market/storage"
 	"time"
 
@@ -14,12 +15,14 @@ import (
 )
 
 type repositoryTransactionRepo struct {
-	DB *pgxpool.Pool
+	DB  *pgxpool.Pool
+	log logger.ILogger
 }
 
-func NewRepositoryTransactionRepo(DB *pgxpool.Pool) storage.IRepositoryTransactionRepo {
+func NewRepositoryTransactionRepo(DB *pgxpool.Pool, log logger.ILogger) storage.IRepositoryTransactionRepo {
 	return &repositoryTransactionRepo{
-		DB: DB,
+		DB:  DB,
+		log: log,
 	}
 }
 
@@ -30,19 +33,19 @@ func (s *repositoryTransactionRepo) Create(ctx context.Context, rtransaction mod
 	if _, err := s.DB.Exec(ctx, `INSERT INTO repository_transactions
 		(id, staff_id, product_id, repository_transaction_type, price, quantity, created_at)
 			VALUES($1, $2, $3, $4, $5, $6, $7)`,
-			id,
-			rtransaction.StaffID,
-			rtransaction.ProductID,
-			rtransaction.RepositoryTransactionType,
-			rtransaction.Price,
-			rtransaction.Quantity,
-			createdAt,
+		id,
+		rtransaction.StaffID,
+		rtransaction.ProductID,
+		rtransaction.RepositoryTransactionType,
+		rtransaction.Price,
+		rtransaction.Quantity,
+		createdAt,
 	); err != nil {
-        log.Println("Error while inserting data:", err)
-        return "", err
-    }
+		log.Println("Error while inserting data:", err)
+		return "", err
+	}
 
-    return id, nil
+	return id, nil
 }
 
 func (s *repositoryTransactionRepo) GetByID(ctx context.Context, id models.PrimaryKey) (models.RepositoryTransaction, error) {
@@ -76,9 +79,9 @@ func (s *repositoryTransactionRepo) GetList(ctx context.Context, request models.
 		page              = request.Page
 		offset            = (page - 1) * request.Limit
 		query, countQuery string
-		rtransactions = []models.RepositoryTransaction{}
-		count  int
-		updatedAt   sql.NullTime
+		rtransactions     = []models.RepositoryTransaction{}
+		count             int
+		updatedAt         sql.NullTime
 	)
 
 	countQuery = `SELECT COUNT(*) FROM repository_transactions where deleted_at = 0 `
@@ -130,7 +133,7 @@ func (s *repositoryTransactionRepo) GetList(ctx context.Context, request models.
 
 	return models.RepositoryTransactionsResponse{
 		RepositoryTransactions: rtransactions,
-		Count:  count,
+		Count:                  count,
 	}, nil
 }
 

@@ -25,23 +25,23 @@ import (
 func (h Handler) CreateTransaction(c *gin.Context) {
 	trans := models.CreateTransaction{}
 	if err := c.ShouldBindJSON(&trans); err != nil {
-		handleResponse(c, "error is while reading body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while reading body", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	id, err := h.storage.Transaction().Create(context.Background(), trans)
 	if err != nil {
-		handleResponse(c, "error is while creating", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while creating", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	createdTrans, err := h.storage.Transaction().GetByID(context.Background(), id)
 	if err != nil {
-		handleResponse(c, "error is while getting by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusCreated, createdTrans)
+	handleResponse(c, h.log, "", http.StatusCreated, createdTrans)
 }
 
 // GetTransaction godoc
@@ -61,11 +61,11 @@ func (h Handler) GetTransaction(c *gin.Context) {
 
 	trans, err := h.storage.Transaction().GetByID(context.Background(), uid)
 	if err != nil {
-		handleResponse(c, "error is while getting by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, trans)
+	handleResponse(c, h.log, "", http.StatusOK, trans)
 }
 
 // GetTransactionList godoc
@@ -94,28 +94,28 @@ func (h Handler) GetTransactionList(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	page, err = strconv.Atoi(pageStr)
 	if err != nil {
-		handleResponse(c, "error is while converting page", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while converting page", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	limitStr := c.DefaultQuery("limit", "10")
 	limit, err = strconv.Atoi(limitStr)
 	if err != nil {
-		handleResponse(c, "error is while converting limit", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while converting limit", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	fromAmountStr := c.DefaultQuery("from-amount", "0")
 	fromAmount, err = strconv.ParseFloat(fromAmountStr, 64)
 	if err != nil {
-		handleResponse(c, "error is while converting from amount", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while converting from amount", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	toAmountStr := c.DefaultQuery("to-amount", fmt.Sprintf("%f", math.MaxFloat64))
 	toAmount, err = strconv.ParseFloat(toAmountStr, 64)
 	if err != nil {
-		handleResponse(c, "error is while converting to amount", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while converting to amount", http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -127,11 +127,11 @@ func (h Handler) GetTransactionList(c *gin.Context) {
 	})
 
 	if err != nil {
-		handleResponse(c, "error is while getting list", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting list", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, transactions)
+	handleResponse(c, h.log, "", http.StatusOK, transactions)
 }
 
 // UpdateTransaction godoc
@@ -152,7 +152,7 @@ func (h Handler) UpdateTransaction(c *gin.Context) {
 
 	trans := models.UpdateTransaction{}
 	if err := c.ShouldBindJSON(&trans); err != nil {
-		handleResponse(c, "error is while reading body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while reading body", http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -160,17 +160,17 @@ func (h Handler) UpdateTransaction(c *gin.Context) {
 
 	id, err := h.storage.Transaction().Update(context.Background(), trans)
 	if err != nil {
-		handleResponse(c, "error is while updating trans", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while updating trans", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	updatedTrans, err := h.storage.Transaction().GetByID(context.Background(), id)
 	if err != nil {
-		handleResponse(c, "error is while getting by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, updatedTrans)
+	handleResponse(c, h.log, "", http.StatusOK, updatedTrans)
 }
 
 // DeleteTransaction godoc
@@ -189,9 +189,9 @@ func (h Handler) DeleteTransaction(c *gin.Context) {
 	uid := c.Param("id")
 
 	if err := h.storage.Transaction().Delete(context.Background(), uid); err != nil {
-		handleResponse(c, "error is while deleting", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while deleting", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, "transaction deleted!")
+	handleResponse(c, h.log, "", http.StatusOK, "transaction deleted!")
 }

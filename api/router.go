@@ -3,8 +3,8 @@ package api
 import (
 	_ "market/api/docs"
 	"market/api/handler"
+	"market/pkg/logger"
 	"market/service"
-	"market/storage"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -15,8 +15,8 @@ import (
 // @title           Swagger Example API
 // @version         1.0
 // @description     This is a sample server celler server.
-func New(services service.IServiceManager , storage storage.IStorage) *gin.Engine {
-	h := handler.New(services , storage)
+func New(services service.IServiceManager, log logger.ILogger) *gin.Engine {
+	h := handler.New(services , log)
 
 	r := gin.New()
 

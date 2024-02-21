@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"market/api/models"
+	"market/pkg/logger"
 	"market/storage"
 
 	"github.com/google/uuid"
@@ -13,10 +14,14 @@ import (
 
 type saleRepo struct {
 	db *pgxpool.Pool
+	log logger.ILogger
 }
 
-func NewSaleRepo(db *pgxpool.Pool) storage.ISaleStorage {
-	return saleRepo{db: db}
+func NewSaleRepo(db *pgxpool.Pool, log logger.ILogger) storage.ISaleStorage {
+	return saleRepo{
+		db: db,
+		log: log,
+	}
 }
 
 func (s saleRepo) Create(ctx context.Context, sale models.CreateSale) (string, error) {

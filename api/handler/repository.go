@@ -25,13 +25,13 @@ func (h Handler) CreateRepository(c *gin.Context) {
 	repository := models.CreateRepository{}
 
 	if err := c.ShouldBindJSON(&repository); err != nil {
-		handleResponse(c, "error while reading body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while reading body", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	id, err := h.storage.Repository().Create(context.Background(), repository)
 	if err != nil {
-		handleResponse(c, "error while creating repository", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while creating repository", http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -39,11 +39,11 @@ func (h Handler) CreateRepository(c *gin.Context) {
 		ID: id,
 	})
 	if err != nil {
-		handleResponse(c, "error while getting by ID", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting by ID", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusCreated, createdRepository)
+	handleResponse(c, h.log, "", http.StatusCreated, createdRepository)
 }
 
 // GetRepository godoc
@@ -63,11 +63,11 @@ func (h Handler) GetRepository(c *gin.Context) {
 
 	repository, err := h.storage.Repository().GetByID(context.Background(), models.PrimaryKey{ID: uid})
 	if err != nil {
-		handleResponse(c, "error while getting repository by ID", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting repository by ID", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, repository)
+	handleResponse(c, h.log, "", http.StatusOK, repository)
 }
 
 // GetRepositoryList godoc
@@ -93,14 +93,14 @@ func (h Handler) GetRepositoryList(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	page, err = strconv.Atoi(pageStr)
 	if err != nil {
-		handleResponse(c, "error while converting page", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while converting page", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	limitStr := c.DefaultQuery("limit", "10")
 	limit, err = strconv.Atoi(limitStr)
 	if err != nil {
-		handleResponse(c, "error while converting limit", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while converting limit", http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -112,11 +112,11 @@ func (h Handler) GetRepositoryList(c *gin.Context) {
 		Search: search,
 	})
 	if err != nil {
-		handleResponse(c, "error while getting repository list", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting repository list", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, response)
+	handleResponse(c, h.log, "", http.StatusOK, response)
 }
 
 // UpdateRepository godoc
@@ -137,23 +137,23 @@ func (h Handler) UpdateRepository(c *gin.Context) {
 
 	repository := models.UpdateRepository{}
 	if err := c.ShouldBindJSON(&repository); err != nil {
-		handleResponse(c, "error while reading from body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while reading from body", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	repository.ID = uid
 	if _, err := h.storage.Repository().Update(context.Background(), repository); err != nil {
-		handleResponse(c, "error while updating repository ", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while updating repository ", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	updatedRepository, err := h.storage.Repository().GetByID(context.Background(), models.PrimaryKey{ID: uid})
 	if err != nil {
-		handleResponse(c, "error while getting by ID", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting by ID", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, updatedRepository)
+	handleResponse(c, h.log, "", http.StatusOK, updatedRepository)
 }
 
 // DeleteRepository godoc
@@ -172,9 +172,9 @@ func (h Handler) DeleteRepository(c *gin.Context) {
 	uid := c.Param("id")
 
 	if err := h.storage.Repository().Delete(context.Background(), uid); err != nil {
-		handleResponse(c, "error while deleting repository ", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while deleting repository ", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, "repository deleted")
+	handleResponse(c, h.log, "", http.StatusOK, "repository deleted")
 }

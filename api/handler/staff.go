@@ -27,24 +27,24 @@ func (h Handler) CreateStaff(c *gin.Context) {
 	staff := models.CreateStaff{}
 
 	if err := c.ShouldBindJSON(&staff); err != nil {
-		handleResponse(c, "error while reading body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while reading body", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	id, err := h.storage.Staff().Create(context.Background(), staff)
 
 	if err != nil {
-		handleResponse(c, "error while creating staff ", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while creating staff ", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	createdStaffTarif, err := h.storage.Staff().StaffByID(context.Background(), models.PrimaryKey{ID: id})
 	if err != nil {
-		handleResponse(c, "error while getting by ID", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting by ID", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusCreated, createdStaffTarif)
+	handleResponse(c, h.log, "", http.StatusCreated, createdStaffTarif)
 }
 
 // GetStaff godoc
@@ -64,11 +64,11 @@ func (h Handler) GetStaff(c *gin.Context) {
 
 	staffTarif, err := h.storage.Staff().StaffByID(context.Background(), models.PrimaryKey{ID: uid})
 	if err != nil {
-		handleResponse(c, "error while getting staff  by ID", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting staff  by ID", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, staffTarif)
+	handleResponse(c, h.log, "", http.StatusOK, staffTarif)
 }
 
 // GetStaffList godoc
@@ -94,14 +94,14 @@ func (h Handler) GetStaffList(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	page, err = strconv.Atoi(pageStr)
 	if err != nil {
-		handleResponse(c, "error while converting page", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while converting page", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	limitStr := c.DefaultQuery("limit", "10")
 	limit, err = strconv.Atoi(limitStr)
 	if err != nil {
-		handleResponse(c, "error while converting limit", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while converting limit", http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -113,11 +113,11 @@ func (h Handler) GetStaffList(c *gin.Context) {
 		Search: search,
 	})
 	if err != nil {
-		handleResponse(c, "error while getting staff list", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting staff list", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, response)
+	handleResponse(c, h.log, "", http.StatusOK, response)
 }
 
 // UpdateStaff godoc
@@ -138,23 +138,23 @@ func (h Handler) UpdateStaff(c *gin.Context) {
 
 	staff := models.UpdateStaff{}
 	if err := c.ShouldBindJSON(&staff); err != nil {
-		handleResponse(c, "error while reading from body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while reading from body", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	staff.ID = uid
 	if _, err := h.storage.Staff().UpdateStaff(context.Background(), staff); err != nil {
-		handleResponse(c, "error while updating staff ", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while updating staff ", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	updatedStaff, err := h.storage.Staff().StaffByID(context.Background(), models.PrimaryKey{ID: uid})
 	if err != nil {
-		handleResponse(c, "error while getting by ID", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting by ID", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, updatedStaff)
+	handleResponse(c, h.log, "", http.StatusOK, updatedStaff)
 }
 
 // DeleteStaff godoc
@@ -173,11 +173,11 @@ func (h Handler) DeleteStaff(c *gin.Context) {
 	uid := c.Param("id")
 
 	if err := h.storage.Staff().DeleteStaff(context.Background(), uid); err != nil {
-		handleResponse(c, "error while deleting staff ", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while deleting staff ", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, "staff deleted")
+	handleResponse(c, h.log, "", http.StatusOK, "staff deleted")
 }
 
 // UpdateStaffPassword godoc
@@ -197,7 +197,7 @@ func (h Handler) UpdateStaffPassword(c *gin.Context) {
 	updateStaffPassword := models.UpdateStaffPassword{}
 
 	if err := c.ShouldBindJSON(&updateStaffPassword); err != nil {
-		handleResponse(c, "error while reading body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error while reading body", http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -211,24 +211,24 @@ func (h Handler) UpdateStaffPassword(c *gin.Context) {
 
 	oldPassword, err := h.storage.Staff().GetPassword(context.Background(), updateStaffPassword.ID)
 	if err != nil {
-		handleResponse(c, "error while getting password by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while getting password by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if oldPassword != updateStaffPassword.OldPassword {
-		handleResponse(c, "old password is not correct", http.StatusBadRequest, "old password is not correct")
+		handleResponse(c, h.log, "old password is not correct", http.StatusBadRequest, "old password is not correct")
 		return
 	}
 
 	if err = check.ValidatePassword(updateStaffPassword.NewPassword); err != nil {
-		handleResponse(c, "new password is weak", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "new password is weak", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err = h.storage.Staff().UpdatePassword(context.Background(), updateStaffPassword); err != nil {
-		handleResponse(c, "error while updating staff password by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error while updating staff password by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, "password successfully updated")
+	handleResponse(c, h.log, "", http.StatusOK, "password successfully updated")
 }

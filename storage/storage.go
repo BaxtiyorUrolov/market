@@ -51,7 +51,7 @@ type IBasketRepo interface {
 	GetByID(context.Context, models.PrimaryKey) (models.Basket, error)
 	GetList(context.Context, models.GetListRequest) (models.BasketsResponse, error)
 	Update(context.Context, models.UpdateBasket) (string, error)
-	Delete(context.Context, string) error
+	Delete(context.Context, models.PrimaryKey) error
 }
 
 type IRepositoryTransactionRepo interface {
@@ -64,7 +64,7 @@ type IRepositoryTransactionRepo interface {
 
 type ICategory interface {
 	Create(context.Context, models.CreateCategory) (string, error)
-	GetByID(context.Context, string) (models.Category, error)
+	GetByID(context.Context, models.PrimaryKey) (models.Category, error)
 	GetList(context.Context, models.GetListRequest) (models.CategoryResponse, error)
 	Update(context.Context, models.UpdateCategory) (string, error)
 	Delete(context.Context, string) error

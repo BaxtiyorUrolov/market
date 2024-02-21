@@ -24,23 +24,23 @@ func (h Handler) CreateProduct(c *gin.Context) {
 	product := models.CreateProduct{}
 
 	if err := c.ShouldBindJSON(&product); err != nil {
-		handleResponse(c, "error is while reading body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while reading body", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	id, err := h.storage.Product().Create(context.Background(), product)
 	if err != nil {
-		handleResponse(c, "error is while creating product", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while creating product", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	createdProduct, err := h.storage.Product().GetByID(context.Background(), id)
 	if err != nil {
-		handleResponse(c, "error is while getting by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusCreated, createdProduct)
+	handleResponse(c, h.log, "", http.StatusCreated, createdProduct)
 }
 
 // GetProduct godoc
@@ -59,11 +59,11 @@ func (h Handler) GetProduct(c *gin.Context) {
 	uid := c.Param("id")
 	product, err := h.storage.Product().GetByID(context.Background(), uid)
 	if err != nil {
-		handleResponse(c, "error is while getting by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, product)
+	handleResponse(c, h.log, "", http.StatusOK, product)
 }
 
 // GetProductList godoc
@@ -92,14 +92,14 @@ func (h Handler) GetProductList(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	page, err = strconv.Atoi(pageStr)
 	if err != nil {
-		handleResponse(c, "error is while converting page", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while converting page", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	limitStr := c.DefaultQuery("limit", "10")
 	limit, err = strconv.Atoi(limitStr)
 	if err != nil {
-		handleResponse(c, "error is while converting limit", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while converting limit", http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -107,7 +107,7 @@ func (h Handler) GetProductList(c *gin.Context) {
 
 	barcode, err = strconv.Atoi(c.DefaultQuery("barcode", "0"))
 	if err != nil {
-		handleResponse(c, "error is while converting barcode", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while converting barcode", http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -118,11 +118,11 @@ func (h Handler) GetProductList(c *gin.Context) {
 		Barcode: barcode,
 	})
 	if err != nil {
-		handleResponse(c, "error is while getting list", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting list", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, products)
+	handleResponse(c, h.log, "", http.StatusOK, products)
 }
 
 // UpdateProduct godoc
@@ -143,24 +143,24 @@ func (h Handler) UpdateProduct(c *gin.Context) {
 	product := models.UpdateProduct{}
 
 	if err := c.ShouldBindJSON(&product); err != nil {
-		handleResponse(c, "error is while reading body", http.StatusBadRequest, err.Error())
+		handleResponse(c, h.log, "error is while reading body", http.StatusBadRequest, err.Error())
 		return
 	}
 
 	product.ID = uid
 	id, err := h.storage.Product().Update(context.Background(), product)
 	if err != nil {
-		handleResponse(c, "error is while updating", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while updating", http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	updatedProduct, err := h.storage.Product().GetByID(context.Background(), id)
 	if err != nil {
-		handleResponse(c, "error is while getting by id", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while getting by id", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, updatedProduct)
+	handleResponse(c, h.log, "", http.StatusOK, updatedProduct)
 }
 
 // DeleteProduct godoc
@@ -178,9 +178,9 @@ func (h Handler) UpdateProduct(c *gin.Context) {
 func (h Handler) DeleteProduct(c *gin.Context) {
 	uid := c.Param("id")
 	if err := h.storage.Product().Delete(context.Background(), uid); err != nil {
-		handleResponse(c, "error is while deleting", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "error is while deleting", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	handleResponse(c, "", http.StatusOK, "product deleted!")
+	handleResponse(c, h.log, "", http.StatusOK, "product deleted!")
 }
